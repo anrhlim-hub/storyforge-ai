@@ -1,7 +1,7 @@
-import Anthropic from "@anthropic-ai/sdk";
+import OpenAI from "openai";
 
-export const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY!,
+export const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY!,
 });
 
 interface ScriptInput {
@@ -39,13 +39,13 @@ PANDUAN:
 
 Tulis script yang lengkap sekarang:`;
 
-  const message = await anthropic.messages.create({
-    model: "claude-sonnet-4-6",
-    max_tokens: 1024,
+  const completion = await openai.chat.completions.create({
+    model: "gpt-4o",
     messages: [{ role: "user", content: prompt }],
+    max_tokens: 1024,
   });
 
-  const content = message.content[0];
-  if (content.type !== "text") throw new Error("Unexpected response type from Claude");
-  return content.text.trim();
+  const content = completion.choices[0]?.message?.content;
+  if (!content) throw new Error("Tidak ada respons dari OpenAI");
+  return content.trim();
 }

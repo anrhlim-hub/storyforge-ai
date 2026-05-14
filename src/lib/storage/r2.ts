@@ -1,4 +1,4 @@
-import { S3Client, DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, DeleteObjectCommand, PutObjectCommand as PutCmd } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 
@@ -33,6 +33,16 @@ export async function getUploadUrl(
 
 export async function deleteFile(key: string): Promise<void> {
   await r2.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: key }));
+}
+
+export async function uploadBuffer(
+  key: string,
+  buffer: Buffer,
+  contentType: string,
+): Promise<void> {
+  await r2.send(
+    new PutCmd({ Bucket: BUCKET, Key: key, Body: buffer, ContentType: contentType }),
+  );
 }
 
 export function buildAssetKey(

@@ -8,6 +8,8 @@ import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EpisodeForm, type EpisodeFormValues } from "@/components/episodes/episode-form";
 import { ScriptEditor } from "@/components/episodes/script-editor";
+import { AiScriptGenerator } from "@/components/episodes/ai-script-generator";
+import { AiVoiceGenerator } from "@/components/episodes/ai-voice-generator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Episode } from "@/types/database";
 
@@ -104,13 +106,27 @@ export default function EditEpisodePage({
                 Tulis script episode. Akan digunakan untuk voice over dan animasi.
               </p>
             </div>
+
+            <AiScriptGenerator
+              episodeId={episode.id}
+              onAccept={(generated) => setScript(generated)}
+            />
+
             <ScriptEditor value={script} onChange={setScript} />
+
             <div className="flex justify-end">
               <Button onClick={handleSaveScript} disabled={saving}>
                 {saving ? "Menyimpan..." : "Simpan Script"}
               </Button>
             </div>
           </div>
+
+          {script.trim() && (
+            <div className="mt-4 rounded-2xl border bg-card p-6">
+              <h2 className="font-semibold mb-3">Voice Over</h2>
+              <AiVoiceGenerator episodeId={episode.id} script={script} />
+            </div>
+          )}
         </TabsContent>
       </Tabs>
     </div>

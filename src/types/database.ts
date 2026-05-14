@@ -55,6 +55,7 @@ export interface Database {
           role?: UserRole;
           updated_at?: string;
         };
+        Relationships: [];
       };
       characters: {
         Row: {
@@ -91,6 +92,7 @@ export interface Database {
           reference_images?: Json;
           is_active?: boolean;
         };
+        Relationships: [];
       };
       episodes: {
         Row: {
@@ -144,6 +146,7 @@ export interface Database {
           reviewed_by?: string | null;
           metadata?: Json;
         };
+        Relationships: [];
       };
       assets: {
         Row: {
@@ -175,6 +178,7 @@ export interface Database {
           url?: string;
           metadata?: Json;
         };
+        Relationships: [];
       };
       production_jobs: {
         Row: {
@@ -209,6 +213,7 @@ export interface Database {
           started_at?: string | null;
           completed_at?: string | null;
         };
+        Relationships: [];
       };
       review_notes: {
         Row: {
@@ -232,8 +237,13 @@ export interface Database {
           note?: string;
           status?: "open" | "resolved";
         };
+        Relationships: [];
       };
     };
+    Views: Record<string, never>;
+    Functions: Record<string, never>;
+    Enums: Record<string, never>;
+    CompositeTypes: Record<string, never>;
   };
 }
 

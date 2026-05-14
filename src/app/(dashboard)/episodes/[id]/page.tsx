@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { StatusBadge } from "@/components/episodes/status-badge";
 import { StartProductionButton } from "@/components/episodes/start-production-button";
+import { ReviewPanel } from "@/components/episodes/review-panel";
 import type { JobType, JobStatus } from "@/types/database";
 
 type ProductionJob = { id: string; job_type: JobType; status: JobStatus; error_message: string | null };
@@ -126,6 +127,9 @@ export default async function EpisodeDetailPage({ params }: PageProps) {
           </div>
         )}
       </div>
+
+      {/* Review Panel — selalu tampil */}
+      <ReviewPanel episodeId={id} episodeStatus={episode.status} />
 
       {/* Production Pipeline */}
       {jobs.length > 0 && (

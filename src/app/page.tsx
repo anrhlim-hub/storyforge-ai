@@ -31,11 +31,11 @@ export default function Home() {
           </p>
 
           <div className="flex flex-col gap-4 sm:flex-row sm:justify-center">
-            <Button asChild size="lg" className="text-lg">
-              <Link href="/login">Mulai Sekarang</Link>
+            <Button size="lg" className="text-lg" render={<Link href="/login" />}>
+              Mulai Sekarang
             </Button>
-            <Button asChild size="lg" variant="outline" className="text-lg">
-              <Link href="/about">Pelajari Lebih Lanjut</Link>
+            <Button size="lg" variant="outline" className="text-lg" render={<Link href="/about" />}>
+              Pelajari Lebih Lanjut
             </Button>
           </div>
         </div>

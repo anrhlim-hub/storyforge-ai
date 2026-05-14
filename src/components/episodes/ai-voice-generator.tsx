@@ -120,7 +120,12 @@ export function AiVoiceGenerator({ episodeId, script, onGenerated }: AiVoiceGene
           ElevenLabs sedang membuat audio... (biasanya 5-15 detik)
         </p>
       )}
-      {audioUrl && (
+      {audioUrl && audioUrl.startsWith("data:") && (
+        <p className="mt-2 text-xs text-amber-600">
+          ✓ Audio berhasil digenerate (sesi ini saja — setup R2 untuk menyimpan permanen)
+        </p>
+      )}
+      {audioUrl && !audioUrl.startsWith("data:") && (
         <p className="mt-2 text-xs text-green-600">
           ✓ Audio tersimpan di Asset Library
         </p>

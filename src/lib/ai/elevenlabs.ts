@@ -6,9 +6,9 @@ export const elevenlabs = new ElevenLabsClient({
 
 // Voice ID dikonfigurasi via env
 const VOICE_IDS = {
-  bimo:     process.env.ELEVENLABS_VOICE_BIMO  ?? "pNInz6obpgDQGcFmaJgB", // default: Adam
-  kiko:     process.env.ELEVENLABS_VOICE_KIKO  ?? "EXAVITQu4vr4xnSDxMaL", // default: Bella
-  narrator: process.env.ELEVENLABS_VOICE_NARR  ?? "onwK4e9ZLuTAKqWW03F9", // default: Daniel
+  bimo:     process.env.ELEVENLABS_VOICE_BIMO  ?? "TX3LPaxmHKxFdv7VOQHJ", // Liam — Energetic (cocok Panda ceria)
+  kiko:     process.env.ELEVENLABS_VOICE_KIKO  ?? "cgSgspJ2msm6clMCkdW9", // Jessica — Playful, Bright, Warm (cocok Rubah)
+  narrator: process.env.ELEVENLABS_VOICE_NARR  ?? "JBFqnCBsd6RMkjVDRZzb", // George — Warm Storyteller
 };
 
 export type VoiceCharacter = keyof typeof VOICE_IDS;

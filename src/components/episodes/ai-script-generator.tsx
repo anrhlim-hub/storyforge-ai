@@ -81,7 +81,7 @@ export function AiScriptGenerator({ episodeId, onAccept }: AiScriptGeneratorProp
       {generating && (
         <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
           <Loader2 className="h-3 w-3 animate-spin" />
-          Claude sedang menulis script... (biasanya 10-20 detik)
+          AI sedang menulis script... (biasanya 10-20 detik)
         </div>
       )}
 

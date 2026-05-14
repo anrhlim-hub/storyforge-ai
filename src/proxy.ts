@@ -9,6 +9,7 @@ const protectedPaths = [
   "/review",
   "/publishing",
   "/analytics",
+  "/settings",
 ];
 
 export async function proxy(request: NextRequest) {

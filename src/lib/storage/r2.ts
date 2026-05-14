@@ -2,6 +2,12 @@ import { S3Client, DeleteObjectCommand, PutObjectCommand as PutCmd } from "@aws-
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 
+export function isR2Configured(): boolean {
+  const { R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET_NAME, R2_PUBLIC_URL } = process.env;
+  return !!(R2_ACCOUNT_ID && R2_ACCESS_KEY_ID && R2_SECRET_ACCESS_KEY && R2_BUCKET_NAME && R2_PUBLIC_URL
+    && R2_ACCOUNT_ID !== "your_r2_account_id");
+}
+
 export const r2 = new S3Client({
   region: "auto",
   endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,

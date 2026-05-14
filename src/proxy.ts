@@ -1,7 +1,17 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-export async function middleware(request: NextRequest) {
+const protectedPaths = [
+  "/episodes",
+  "/characters",
+  "/assets",
+  "/production",
+  "/review",
+  "/publishing",
+  "/analytics",
+];
+
+export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -31,14 +41,8 @@ export async function middleware(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
 
-  // Redirect ke login jika belum login dan akses dashboard
-  if (!user && pathname.startsWith("/episodes") ||
-      !user && pathname.startsWith("/characters") ||
-      !user && pathname.startsWith("/assets") ||
-      !user && pathname.startsWith("/production") ||
-      !user && pathname.startsWith("/review") ||
-      !user && pathname.startsWith("/publishing") ||
-      !user && pathname.startsWith("/analytics")) {
+  // Redirect ke login jika belum login dan akses halaman dashboard
+  if (!user && protectedPaths.some((p) => pathname.startsWith(p))) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 

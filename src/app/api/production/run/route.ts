@@ -4,7 +4,7 @@ import { generateVoiceBuffer, type VoiceCharacter } from "@/lib/ai/elevenlabs";
 import { uploadBuffer, buildAssetKey, getPublicUrl, isR2Configured, uploadFromUrl } from "@/lib/storage/r2";
 import { generateScript } from "@/lib/ai/claude";
 import { isLeonardoConfigured, generateSceneImage, buildImagePrompt } from "@/lib/ai/leonardo";
-import { isRunwayConfigured, animateImage, buildAnimationPrompt } from "@/lib/ai/runway";
+import { isFalConfigured, animateImageFal, buildAnimationPromptFal } from "@/lib/ai/falai";
 import { isSunoConfigured, generateMusic, buildMusicPrompt } from "@/lib/ai/suno";
 import { getMusicTrack } from "@/lib/ai/music-library";
 import { notifyReviewReady, notifyProductionFailed } from "@/lib/notifications/email";
@@ -90,14 +90,13 @@ async function runImageGeneration(episodeId: string, episode: Record<string, unk
 }
 
 async function runAnimation(episodeId: string, episode: Record<string, unknown>) {
-  if (!isRunwayConfigured()) {
+  if (!isFalConfigured()) {
     return {
       simulated: true,
-      message: "Runway ML belum dikonfigurasi — mode simulasi",
+      message: "FAL.ai belum dikonfigurasi — mode simulasi",
     };
   }
 
-  // Ambil URL gambar dari result job image_generation sebelumnya
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db_temp = episode as any;
   const imageUrl: string | null = db_temp.thumbnail_url ?? null;
@@ -109,12 +108,12 @@ async function runAnimation(episodeId: string, episode: Record<string, unknown>)
     };
   }
 
-  const prompt = buildAnimationPrompt(
+  const prompt = buildAnimationPromptFal(
     episode.title as string,
     (episode.theme as string) ?? null,
   );
 
-  const videoUrl = await animateImage(imageUrl, prompt);
+  const videoUrl = await animateImageFal(imageUrl, prompt);
 
   if (!isR2Configured()) {
     return { simulated: false, video_url: videoUrl, stored_in_r2: false };

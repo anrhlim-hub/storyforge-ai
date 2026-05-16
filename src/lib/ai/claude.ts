@@ -25,10 +25,12 @@ KARAKTER UTAMA:
 - BIMO: Panda jantan 7 tahun, ceria, pemberani, kadang ceroboh, suka petualangan
 - KIKO: Rubah betina 7 tahun, cerdas, kreatif, suka memecahkan masalah dengan cara unik
 
-FORMAT SCRIPT (gunakan format ini dengan tepat):
+FORMAT SCRIPT (gunakan format ini dengan TEPAT, tanpa tanda bintang, tanpa markdown):
 [NARASI] Deskripsi adegan / setting
 [BIMO] Dialog Bimo
 [KIKO] Dialog Kiko
+
+PENTING: Jangan gunakan markdown seperti **teks** atau _teks_. Hanya gunakan format [TAG] polos.
 
 PANDUAN:
 1. Gunakan bahasa Indonesia yang mudah dipahami anak usia 3-8 tahun
@@ -47,5 +49,6 @@ Tulis script yang lengkap sekarang:`;
 
   const content = completion.choices[0]?.message?.content;
   if (!content) throw new Error("Tidak ada respons dari OpenAI");
-  return content.trim();
+  // Bersihkan markdown bold yang kadang ditambahkan GPT: **[BIMO]** → [BIMO]
+  return content.trim().replace(/\*\*(\[(?:NARASI|BIMO|KIKO)\])\*\*/gi, "$1");
 }

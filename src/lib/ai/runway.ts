@@ -26,7 +26,7 @@ export async function animateImage(
       promptText: prompt,
       model: "gen4_turbo",
       duration: 5,
-      ratio: "1280:768",
+      ratio: "1280:720",
     }),
   });
 

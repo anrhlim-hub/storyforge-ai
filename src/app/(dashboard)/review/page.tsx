@@ -13,7 +13,6 @@ import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/episodes/status-badge";
 import type { Episode } from "@/types/database";
 
-type EpisodeWithNotes = Episode & { open_notes: number };
 
 export default function ReviewPage() {
   const [episodes, setEpisodes] = useState<Episode[]>([]);
@@ -47,7 +46,7 @@ export default function ReviewPage() {
     setLoading(false);
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { void load(); }, [load]);
 
   const pendingReview = episodes.filter((e) => e.status === "review");
   const approved = episodes.filter((e) => e.status === "approved");
@@ -55,7 +54,7 @@ export default function ReviewPage() {
   const totalOpenNotes = Object.values(noteCounts).reduce((a, b) => a + b, 0);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

@@ -104,7 +104,7 @@ export default async function EpisodeDetailPage({ params }: PageProps) {
       </div>
 
       {/* Script */}
-      <div className="rounded-xl border bg-card p-5">
+      <div className="mb-6 rounded-xl border bg-card p-5">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="font-semibold">Script</h2>
           {episode.script && (
@@ -129,7 +129,9 @@ export default async function EpisodeDetailPage({ params }: PageProps) {
       </div>
 
       {/* Review Panel — selalu tampil */}
-      <ReviewPanel episodeId={id} episodeStatus={episode.status} />
+      <div className="mb-6">
+        <ReviewPanel episodeId={id} episodeStatus={episode.status} />
+      </div>
 
       {/* Production Pipeline */}
       {jobs.length > 0 && (

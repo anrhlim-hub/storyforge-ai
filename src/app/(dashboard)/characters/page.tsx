@@ -75,7 +75,7 @@ export default function CharactersPage() {
     setLoading(false);
   }, []);
 
-  useEffect(() => { loadCharacters(); }, [loadCharacters]);
+  useEffect(() => { void loadCharacters(); }, [loadCharacters]);
 
   function openCreate() {
     setEditingId(null);
@@ -153,7 +153,7 @@ export default function CharactersPage() {
   const activeCount = characters.filter((c) => c.is_active).length;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -267,7 +267,7 @@ export default function CharactersPage() {
           <Users className="mb-4 h-12 w-12 opacity-30" />
           <p className="font-medium text-muted-foreground">Belum ada karakter</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            Klik "Tambah Karakter" untuk mulai
+            Klik &quot;Tambah Karakter&quot; untuk mulai
           </p>
         </div>
       ) : (
@@ -342,7 +342,7 @@ export default function CharactersPage() {
                   >
                     <span
                       className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform ${
-                        char.is_active ? "translate-x-4.5" : "translate-x-0.5"
+                        char.is_active ? "translate-x-5" : "translate-x-0.5"
                       }`}
                     />
                   </button>

@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import {
   Clapperboard, Volume2, ImageIcon, Film, Music,
   Video, Send, RefreshCw, CheckCircle2, XCircle,
-  Clock, Loader2, ExternalLink,
+  Clock, Loader2, ExternalLink, Play, Zap, ListTodo,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -55,6 +55,9 @@ export default function ProductionPage() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState<JobStatus | "all">("all");
+  const [queueLength, setQueueLength] = useState(0);
+  const [workerRunning, setWorkerRunning] = useState(false);
+  const workerRef = useRef(false);
 
   const loadJobs = useCallback(async () => {
     setLoading(true);
@@ -64,7 +67,53 @@ export default function ProductionPage() {
     setLoading(false);
   }, [filterStatus]);
 
+  const loadQueue = useCallback(async () => {
+    const res = await fetch("/api/production/enqueue");
+    if (res.ok) {
+      const data = await res.json();
+      setQueueLength(data.queueLength ?? 0);
+    }
+  }, []);
+
   useEffect(() => { loadJobs(); }, [loadJobs]);
+
+  // Auto-refresh setiap 5 detik jika ada job processing/pending
+  useEffect(() => {
+    const hasActive = jobs.some((j) => j.status === "processing" || j.status === "pending");
+    if (!hasActive) return;
+    const interval = setInterval(() => { loadJobs(); loadQueue(); }, 5000);
+    return () => clearInterval(interval);
+  }, [jobs, loadJobs, loadQueue]);
+
+  useEffect(() => { loadQueue(); }, [loadQueue]);
+
+  // Worker loop — proses job dari Redis queue satu per satu
+  const runWorker = useCallback(async () => {
+    if (workerRef.current) return;
+    workerRef.current = true;
+    setWorkerRunning(true);
+
+    try {
+      while (true) {
+        const res = await fetch("/api/production/worker", { method: "POST" });
+        const data = await res.json();
+        loadJobs();
+        loadQueue();
+
+        if (data.done || data.remaining === 0) break;
+        if (!res.ok) {
+          toast.error(`Job gagal: ${data.error ?? "error tidak diketahui"}`);
+          break;
+        }
+      }
+      toast.success("Semua job dalam antrian selesai diproses");
+    } finally {
+      workerRef.current = false;
+      setWorkerRunning(false);
+      loadJobs();
+      loadQueue();
+    }
+  }, [loadJobs, loadQueue]);
 
   async function handleRetry(jobId: string) {
     const res = await fetch(`/api/production/jobs/${jobId}`, {
@@ -78,6 +127,71 @@ export default function ProductionPage() {
     } else {
       toast.error("Gagal retry job");
     }
+  }
+
+  async function handleRun(jobId: string) {
+    toast.info("Memulai job...");
+    const res = await fetch("/api/production/run", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ jobId }),
+    });
+    if (res.ok) {
+      toast.success("Job selesai");
+      loadJobs();
+    } else {
+      const err = await res.json().catch(() => ({}));
+      toast.error(err?.error ?? "Job gagal");
+      loadJobs();
+    }
+  }
+
+  async function handleSubmitReview(episodeId: string) {
+    const res = await fetch(`/api/episodes/${episodeId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "review" }),
+    });
+    if (res.ok) {
+      toast.success("Episode dikirim ke Review Hub");
+      loadJobs();
+    } else {
+      toast.error("Gagal kirim ke review");
+    }
+  }
+
+  // Enqueue semua pending job ke Redis, lalu jalankan worker
+  async function handleQueueAll(jobIds: string[]) {
+    const enqRes = await fetch("/api/production/enqueue", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ jobIds }),
+    });
+
+    if (!enqRes.ok) {
+      // Redis belum konfigurasi — fallback ke mode sequential lama
+      toast.info(`Memproses ${jobIds.length} job (mode langsung)...`);
+      for (const jobId of jobIds) {
+        const res = await fetch("/api/production/run", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ jobId }),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          toast.error(`Job gagal: ${err?.error ?? "error tidak diketahui"}`);
+          break;
+        }
+      }
+      toast.success("Pipeline selesai");
+      loadJobs();
+      return;
+    }
+
+    const data = await enqRes.json();
+    toast.success(`${data.queued} job ditambahkan ke antrian`);
+    loadQueue();
+    runWorker();
   }
 
   // Kelompokkan jobs per episode
@@ -96,7 +210,7 @@ export default function ProductionPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -105,10 +219,20 @@ export default function ProductionPage() {
             Status antrian job produksi animasi
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={loadJobs}>
-          <RefreshCw className="mr-2 h-3.5 w-3.5" />
-          Refresh
-        </Button>
+        <div className="flex items-center gap-2">
+          {/* Queue indicator */}
+          {queueLength > 0 && (
+            <span className="flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-500/10 px-3 py-1 text-xs font-medium text-blue-600">
+              <ListTodo className="h-3 w-3" />
+              {queueLength} dalam antrian
+              {workerRunning && <Loader2 className="h-3 w-3 animate-spin" />}
+            </span>
+          )}
+          <Button variant="outline" size="sm" onClick={() => { loadJobs(); loadQueue(); }}>
+            <RefreshCw className="mr-2 h-3.5 w-3.5" />
+            Refresh
+          </Button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -122,7 +246,7 @@ export default function ProductionPage() {
           <button
             key={key}
             onClick={() => setFilterStatus(filterStatus === key ? "all" : key)}
-            className={`rounded-xl border p-4 text-left transition-colors hover:bg-muted/50 ${filterStatus === key ? "border-primary bg-primary/5" : ""}`}
+            className={`rounded-xl border p-4 text-left transition-colors hover:bg-muted/50 ${filterStatus === key ? `border-primary ${bg}` : ""}`}
           >
             <p className={`text-2xl font-bold ${color}`}>{counts[key]}</p>
             <p className="text-sm text-muted-foreground">{label}</p>
@@ -187,9 +311,13 @@ export default function ProductionPage() {
                       {episode?.title ?? "Episode tidak diketahui"}
                     </Link>
                     {allDone && (
-                      <span className="rounded-full bg-green-500/10 px-2 py-0.5 text-xs font-medium text-green-600">
-                        Selesai
-                      </span>
+                      <button
+                        onClick={() => handleSubmitReview(episodeId)}
+                        className="flex items-center gap-1 rounded-full bg-green-500/10 px-2.5 py-0.5 text-xs font-medium text-green-600 hover:bg-green-500/20 transition-colors"
+                      >
+                        <CheckCircle2 className="h-3 w-3" />
+                        Kirim ke Review
+                      </button>
                     )}
                     {hasFailure && (
                       <span className="rounded-full bg-destructive/10 px-2 py-0.5 text-xs font-medium text-destructive">
@@ -197,7 +325,28 @@ export default function ProductionPage() {
                       </span>
                     )}
                   </div>
-                  <span className="text-xs text-muted-foreground">{epJobs.length} job</span>
+                  <div className="flex items-center gap-2">
+                    {(() => {
+                      const pendingJobs = PIPELINE_ORDER
+                        .map((t) => jobMap[t])
+                        .filter((j) => j && j.status === "pending")
+                        .map((j) => j!.id);
+                      return pendingJobs.length > 0 ? (
+                        <button
+                          onClick={() => handleQueueAll(pendingJobs)}
+                          disabled={workerRunning}
+                          className="flex items-center gap-1 rounded-lg bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
+                        >
+                          {workerRunning
+                            ? <Loader2 className="h-3 w-3 animate-spin" />
+                            : <Zap className="h-3 w-3" />
+                          }
+                          {workerRunning ? "Memproses..." : "Proses Semua"}
+                        </button>
+                      ) : null;
+                    })()}
+                    <span className="text-xs text-muted-foreground">{epJobs.length} job</span>
+                  </div>
                 </div>
 
                 {/* Pipeline steps */}
@@ -230,6 +379,16 @@ export default function ProductionPage() {
                           )}
                         </div>
 
+                        {/* Run button for pending jobs */}
+                        {job?.status === "pending" && (
+                          <button
+                            onClick={() => handleRun(job.id)}
+                            className="rounded p-0.5 text-green-600 hover:text-green-700"
+                            title="Jalankan job ini"
+                          >
+                            <Play className="h-3 w-3" />
+                          </button>
+                        )}
                         {/* Retry button for failed jobs */}
                         {job?.status === "failed" && (
                           <button

@@ -51,6 +51,18 @@ export async function uploadBuffer(
   );
 }
 
+export async function uploadFromUrl(
+  key: string,
+  sourceUrl: string,
+  contentType: string,
+): Promise<void> {
+  const res = await fetch(sourceUrl);
+  if (!res.ok) throw new Error(`Gagal download dari ${sourceUrl}: ${res.status}`);
+  const arrayBuffer = await res.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
+  await uploadBuffer(key, buffer, contentType);
+}
+
 export function buildAssetKey(
   episodeId: string,
   type: string,

@@ -6,7 +6,7 @@ import { formatDistanceToNow } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import {
   MessageSquare, CheckCircle2, XCircle, Send,
-  CheckCheck, Circle, Trash2, Loader2,
+  CheckCheck, Circle, Trash2, Loader2, Volume2, ChevronDown, ChevronUp,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,8 @@ type Note = {
   created_at: string;
   profiles: { full_name: string | null } | null;
 };
+
+type AudioFile = { character: string; url: string; key: string };
 
 export function ReviewPanel({
   episodeId,
@@ -35,6 +37,8 @@ export function ReviewPanel({
   const [showRejectForm, setShowRejectForm] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const [rejecting, setRejecting] = useState(false);
+  const [audioFiles, setAudioFiles] = useState<AudioFile[]>([]);
+  const [showAudio, setShowAudio] = useState(false);
 
   const loadNotes = useCallback(async () => {
     const res = await fetch(`/api/review/notes?episodeId=${episodeId}`);
@@ -42,7 +46,19 @@ export function ReviewPanel({
     setLoading(false);
   }, [episodeId]);
 
-  useEffect(() => { loadNotes(); }, [loadNotes]);
+  const loadAudio = useCallback(async () => {
+    const res = await fetch(`/api/production/jobs?episodeId=${episodeId}`);
+    if (!res.ok) return;
+    const jobs: Array<{ job_type: string; status: string; result: unknown }> = await res.json();
+    const voiceJob = jobs.find((j) => j.job_type === "voice_over" && j.status === "completed");
+    if (!voiceJob?.result) return;
+    const result = voiceJob.result as { audio_files?: AudioFile[] };
+    if (Array.isArray(result.audio_files) && result.audio_files.length > 0) {
+      setAudioFiles(result.audio_files);
+    }
+  }, [episodeId]);
+
+  useEffect(() => { void loadNotes(); void loadAudio(); }, [loadNotes, loadAudio]);
 
   async function handlePostNote() {
     if (!newNote.trim()) return;
@@ -152,6 +168,34 @@ export function ReviewPanel({
           </span>
         )}
       </div>
+
+      {/* Audio Preview */}
+      {audioFiles.length > 0 && (
+        <div className="rounded-lg border border-purple-200 bg-purple-500/5">
+          <button
+            onClick={() => setShowAudio((v) => !v)}
+            className="flex w-full items-center justify-between px-3 py-2.5 text-sm font-medium text-purple-700"
+          >
+            <span className="flex items-center gap-2">
+              <Volume2 className="h-4 w-4" />
+              Preview Voice Over ({audioFiles.length} file)
+            </span>
+            {showAudio ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </button>
+          {showAudio && (
+            <div className="border-t border-purple-200 px-3 pb-3 pt-2 space-y-2">
+              {audioFiles.map((af, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <span className="w-16 shrink-0 rounded-full bg-purple-100 px-2 py-0.5 text-center text-xs font-medium capitalize text-purple-700">
+                    {af.character}
+                  </span>
+                  <audio controls className="h-8 w-full" src={af.url} preload="none" />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Form reject */}
       {showRejectForm && (

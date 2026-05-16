@@ -47,7 +47,7 @@ export default function AssetsPage() {
     setLoading(false);
   }, [filterType]);
 
-  useEffect(() => { loadAssets(); }, [loadAssets]);
+  useEffect(() => { void loadAssets(); }, [loadAssets]);
 
   async function handleUploaded(data: { name: string; url: string; key: string; size: number; type: AssetType }) {
     const res = await fetch("/api/assets", {
@@ -79,7 +79,7 @@ export default function AssetsPage() {
   }, {});
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -150,7 +150,7 @@ export default function AssetsPage() {
           <AssetTypeIcon type={filterType === "all" ? "image" : filterType} size="lg" className="mb-4 opacity-40" />
           <p className="font-medium text-muted-foreground">Belum ada asset</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            Klik "Upload Asset" untuk menambahkan file
+            Klik &quot;Upload Asset&quot; untuk menambahkan file
           </p>
         </div>
       ) : (

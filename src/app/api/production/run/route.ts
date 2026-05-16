@@ -4,7 +4,7 @@ import { generateVoiceBuffer, type VoiceCharacter } from "@/lib/ai/elevenlabs";
 import { uploadBuffer, buildAssetKey, getPublicUrl, isR2Configured, uploadFromUrl } from "@/lib/storage/r2";
 import { generateScript } from "@/lib/ai/claude";
 import { isLeonardoConfigured, generateSceneImage, buildImagePrompt } from "@/lib/ai/leonardo";
-import { isFalConfigured, animateImageFal, buildAnimationPromptFal } from "@/lib/ai/falai";
+import { isKlingConfigured, animateImageKling, buildAnimationPromptKling } from "@/lib/ai/kling";
 import { isSunoConfigured, generateMusic, buildMusicPrompt } from "@/lib/ai/suno";
 import { getMusicTrack } from "@/lib/ai/music-library";
 import { notifyReviewReady, notifyProductionFailed } from "@/lib/notifications/email";
@@ -90,10 +90,10 @@ async function runImageGeneration(episodeId: string, episode: Record<string, unk
 }
 
 async function runAnimation(episodeId: string, episode: Record<string, unknown>) {
-  if (!isFalConfigured()) {
+  if (!isKlingConfigured()) {
     return {
       simulated: true,
-      message: "FAL.ai belum dikonfigurasi — mode simulasi",
+      message: "Kling AI belum dikonfigurasi — mode simulasi",
     };
   }
 
@@ -108,12 +108,12 @@ async function runAnimation(episodeId: string, episode: Record<string, unknown>)
     };
   }
 
-  const prompt = buildAnimationPromptFal(
+  const prompt = buildAnimationPromptKling(
     episode.title as string,
     (episode.theme as string) ?? null,
   );
 
-  const videoUrl = await animateImageFal(imageUrl, prompt);
+  const videoUrl = await animateImageKling(imageUrl, prompt);
 
   if (!isR2Configured()) {
     return { simulated: false, video_url: videoUrl, stored_in_r2: false };

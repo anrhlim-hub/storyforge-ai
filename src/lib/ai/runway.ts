@@ -24,7 +24,7 @@ export async function animateImage(
     body: JSON.stringify({
       promptImage: imageUrl,
       promptText: prompt,
-      model: "gen3a_turbo",
+      model: "gen4_turbo",
       duration: 5,
       ratio: "1280:768",
     }),

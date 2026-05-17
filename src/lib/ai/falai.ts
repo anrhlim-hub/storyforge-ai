@@ -11,20 +11,20 @@ export async function animateImageFal(
 ): Promise<string> {
   fal.config({ credentials: process.env.FAL_API_KEY! });
 
-  // Kling Standard image-to-video — $0.084/sec, ~$0.42 per 5s clip
-  // Affordable & reliable, clear image-to-video endpoint
-  const result = await fal.subscribe("fal-ai/kling-video/v1.5/standard/image-to-video", {
+  // LTX Video image-to-video — ~$0.02-0.05 per video, fast & affordable
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const result = await (fal.subscribe as any)("fal-ai/ltx-video/image-to-video", {
     input: {
       image_url: imageUrl,
       prompt,
-      duration: "5",
-      aspect_ratio: "16:9",
+      duration: 5,
+      resolution: "720p",
     },
   });
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const url: string | undefined = (result as any)?.data?.video?.url;
-  if (!url) throw new Error("FAL.ai tidak mengembalikan URL video");
+  if (!url) throw new Error("FAL.ai LTX Video tidak mengembalikan URL video");
   return url;
 }
 
@@ -33,7 +33,7 @@ export function buildAnimationPromptFal(title: string, theme: string | null): st
     "Gentle camera movement, children's 2D animation style",
     `Scene from episode: "${title}"`,
     theme ? `Theme: ${theme}` : null,
-    "Soft smooth motion, colorful, cheerful atmosphere, suitable for children",
+    "Soft smooth motion, colorful, cheerful, suitable for children",
   ]
     .filter(Boolean)
     .join(". ");

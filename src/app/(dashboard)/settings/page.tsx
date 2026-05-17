@@ -9,6 +9,7 @@ import {
 type Integrations = {
   facebook: { configured: boolean; pageId: string | null };
   openai: { configured: boolean };
+  googletts: { configured: boolean };
   elevenlabs: { configured: boolean };
   falai: { configured: boolean };
   leonardo: { configured: boolean };
@@ -31,9 +32,19 @@ const INTEGRATION_META = [
     group: "ai",
   },
   {
+    key: "googletts",
+    name: "Google Cloud TTS",
+    description: "Voice over karakter Bimo & Kiko dengan suara Indonesia anak-anak (Neural2 + SSML).",
+    icon: Mic,
+    color: "text-teal-500",
+    bg: "bg-teal-500/10",
+    envKey: "GOOGLE_TTS_API_KEY",
+    group: "ai",
+  },
+  {
     key: "elevenlabs",
     name: "ElevenLabs",
-    description: "Text-to-speech untuk narasi dan dialog karakter.",
+    description: "Fallback TTS jika Google Cloud TTS tidak aktif.",
     icon: Mic,
     color: "text-purple-500",
     bg: "bg-purple-500/10",
@@ -42,8 +53,8 @@ const INTEGRATION_META = [
   },
   {
     key: "falai",
-    name: "FAL.ai (LTX Video)",
-    description: "Generasi video animasi image-to-video dengan LTX Video.",
+    name: "FAL.ai — Kling Standard",
+    description: "Animasi image-to-video dengan Kling v1.5 Standard (~$0.14/clip, 5s per adegan).",
     icon: Video,
     color: "text-blue-500",
     bg: "bg-blue-500/10",
@@ -374,7 +385,7 @@ export default function SettingsPage() {
       )}
 
       {/* Voice Test */}
-      {!loading && <VoiceTestPanel />}
+      <VoiceTestPanel />
 
       {/* Footer note */}
       {!loading && data && configured < total && (

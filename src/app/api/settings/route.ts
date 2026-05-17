@@ -29,6 +29,9 @@ export async function GET() {
       openai: {
         configured: isConfigured(e.OPENAI_API_KEY, "your_openai_api_key"),
       },
+      googletts: {
+        configured: isConfigured(e.GOOGLE_TTS_API_KEY, "your_google_tts_api_key"),
+      },
       elevenlabs: {
         configured: isConfigured(e.ELEVENLABS_API_KEY, "your_elevenlabs_api_key"),
       },

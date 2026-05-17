@@ -6,7 +6,7 @@ import { formatDistanceToNow } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import {
   MessageSquare, CheckCircle2, XCircle, Send,
-  CheckCheck, Circle, Trash2, Loader2, Volume2, ChevronDown, ChevronUp,
+  CheckCheck, Circle, Trash2, Loader2, Volume2, ChevronDown, ChevronUp, Film,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -24,9 +24,13 @@ type AudioFile = { character: string; url: string; key: string };
 export function ReviewPanel({
   episodeId,
   episodeStatus,
+  videoUrl,
+  thumbnailUrl,
 }: {
   episodeId: string;
   episodeStatus: string;
+  videoUrl?: string | null;
+  thumbnailUrl?: string | null;
 }) {
   const router = useRouter();
   const [notes, setNotes] = useState<Note[]>([]);
@@ -168,6 +172,25 @@ export function ReviewPanel({
           </span>
         )}
       </div>
+
+      {/* Video Preview */}
+      {videoUrl && (
+        <div className="rounded-lg border border-blue-200 bg-blue-500/5 overflow-hidden">
+          <div className="flex items-center gap-2 px-3 py-2.5 text-sm font-medium text-blue-700">
+            <Film className="h-4 w-4" />
+            Preview Video Animasi
+          </div>
+          <div className="border-t border-blue-200">
+            <video
+              controls
+              className="w-full max-h-64 bg-black"
+              src={videoUrl}
+              poster={thumbnailUrl ?? undefined}
+              preload="metadata"
+            />
+          </div>
+        </div>
+      )}
 
       {/* Audio Preview */}
       {audioFiles.length > 0 && (

@@ -130,7 +130,12 @@ export default async function EpisodeDetailPage({ params }: PageProps) {
 
       {/* Review Panel — selalu tampil */}
       <div className="mb-6">
-        <ReviewPanel episodeId={id} episodeStatus={episode.status} />
+        <ReviewPanel
+          episodeId={id}
+          episodeStatus={episode.status}
+          videoUrl={episode.video_url ?? null}
+          thumbnailUrl={episode.thumbnail_url ?? null}
+        />
       </div>
 
       {/* Production Pipeline */}

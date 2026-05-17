@@ -50,15 +50,28 @@ export function ReviewPanel({
     setLoading(false);
   }, [episodeId]);
 
+  const [sceneVideos, setSceneVideos] = useState<string[]>([]);
+  const [activeScene, setActiveScene] = useState(0);
+
   const loadAudio = useCallback(async () => {
     const res = await fetch(`/api/production/jobs?episodeId=${episodeId}`);
     if (!res.ok) return;
     const jobs: Array<{ job_type: string; status: string; result: unknown }> = await res.json();
+
     const voiceJob = jobs.find((j) => j.job_type === "voice_over" && j.status === "completed");
-    if (!voiceJob?.result) return;
-    const result = voiceJob.result as { audio_files?: AudioFile[] };
-    if (Array.isArray(result.audio_files) && result.audio_files.length > 0) {
-      setAudioFiles(result.audio_files);
+    if (voiceJob?.result) {
+      const result = voiceJob.result as { audio_files?: AudioFile[] };
+      if (Array.isArray(result.audio_files) && result.audio_files.length > 0) {
+        setAudioFiles(result.audio_files);
+      }
+    }
+
+    const animJob = jobs.find((j) => j.job_type === "animation" && j.status === "completed");
+    if (animJob?.result) {
+      const result = animJob.result as { scene_videos?: string[] };
+      if (Array.isArray(result.scene_videos) && result.scene_videos.length > 1) {
+        setSceneVideos(result.scene_videos);
+      }
     }
   }, [episodeId]);
 
@@ -173,22 +186,58 @@ export function ReviewPanel({
         )}
       </div>
 
-      {/* Video Preview */}
-      {videoUrl && (
+      {/* Video Preview — multi-scene playlist atau single */}
+      {(sceneVideos.length > 1 || videoUrl) && (
         <div className="rounded-lg border border-blue-200 bg-blue-500/5 overflow-hidden">
-          <div className="flex items-center gap-2 px-3 py-2.5 text-sm font-medium text-blue-700">
-            <Film className="h-4 w-4" />
-            Preview Video Animasi
+          <div className="flex items-center justify-between px-3 py-2.5">
+            <span className="flex items-center gap-2 text-sm font-medium text-blue-700">
+              <Film className="h-4 w-4" />
+              Preview Video Animasi
+              {sceneVideos.length > 1 && (
+                <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs">
+                  {sceneVideos.length} adegan
+                </span>
+              )}
+            </span>
+            {sceneVideos.length > 1 && (
+              <span className="text-xs text-blue-600">
+                Adegan {activeScene + 1} / {sceneVideos.length}
+              </span>
+            )}
           </div>
           <div className="border-t border-blue-200">
             <video
+              key={sceneVideos.length > 1 ? sceneVideos[activeScene] : videoUrl!}
               controls
-              className="w-full max-h-64 bg-black"
-              src={videoUrl}
-              poster={thumbnailUrl ?? undefined}
+              autoPlay={false}
+              className="w-full max-h-72 bg-black"
+              src={sceneVideos.length > 1 ? sceneVideos[activeScene] : videoUrl!}
+              poster={activeScene === 0 ? (thumbnailUrl ?? undefined) : undefined}
               preload="metadata"
+              onEnded={() => {
+                if (sceneVideos.length > 1 && activeScene < sceneVideos.length - 1) {
+                  setActiveScene((p) => p + 1);
+                }
+              }}
             />
           </div>
+          {sceneVideos.length > 1 && (
+            <div className="border-t border-blue-200 flex gap-1 overflow-x-auto p-2">
+              {sceneVideos.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setActiveScene(i)}
+                  className={`shrink-0 rounded px-2.5 py-1 text-xs font-medium transition-colors ${
+                    i === activeScene
+                      ? "bg-blue-600 text-white"
+                      : "bg-blue-100 text-blue-700 hover:bg-blue-200"
+                  }`}
+                >
+                  {i + 1}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

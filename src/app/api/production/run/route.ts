@@ -3,8 +3,9 @@ import { createClient } from "@/lib/db/server";
 import { generateVoiceBuffer, type VoiceCharacter } from "@/lib/ai/elevenlabs";
 import { uploadBuffer, buildAssetKey, getPublicUrl, isR2Configured, uploadFromUrl } from "@/lib/storage/r2";
 import { generateScript } from "@/lib/ai/claude";
-import { isLeonardoConfigured, generateSceneImage, buildImagePrompt } from "@/lib/ai/leonardo";
+import { isLeonardoConfigured, generateSceneImage } from "@/lib/ai/leonardo";
 import { isFalConfigured, animateImageFal, buildAnimationPromptFal } from "@/lib/ai/falai";
+import { parseScenes } from "@/lib/ai/scene-parser";
 import { isSunoConfigured, generateMusic, buildMusicPrompt } from "@/lib/ai/suno";
 import { getMusicTrack } from "@/lib/ai/music-library";
 import { notifyReviewReady, notifyProductionFailed } from "@/lib/notifications/email";
@@ -63,67 +64,71 @@ async function runVoiceOver(episodeId: string, script: string) {
 
 async function runImageGeneration(episodeId: string, episode: Record<string, unknown>) {
   if (!isLeonardoConfigured()) {
-    return {
-      simulated: true,
-      message: "Leonardo AI belum dikonfigurasi — mode simulasi",
-    };
+    return { simulated: true, message: "Leonardo AI belum dikonfigurasi — mode simulasi" };
   }
 
-  const prompt = buildImagePrompt(
-    episode.title as string,
-    (episode.theme as string) ?? null,
-    (episode.moral_lesson as string) ?? null,
-  );
+  const scenes = parseScenes((episode.script as string) ?? "");
 
-  const imageUrl = await generateSceneImage(prompt);
-
-  if (!isR2Configured()) {
-    return { simulated: false, image_url: imageUrl, stored_in_r2: false };
+  if (scenes.length === 0) {
+    return { simulated: true, message: "Script belum ada adegan NARASI" };
   }
 
-  // Download gambar dari Leonardo lalu upload ke R2
-  const key = buildAssetKey(episodeId, "images", `scene_${Date.now()}.jpg`);
-  await uploadFromUrl(key, imageUrl, "image/jpeg");
-  const r2Url = getPublicUrl(key);
+  // Generate semua scene image secara paralel
+  const imagePromises = scenes.map(async (scene) => {
+    const url = await generateSceneImage(scene.imagePrompt);
+    if (!isR2Configured()) return url;
+    const key = buildAssetKey(episodeId, "images", `scene${scene.index}_${Date.now()}.jpg`);
+    await uploadFromUrl(key, url, "image/jpeg");
+    return getPublicUrl(key);
+  });
 
-  return { simulated: false, image_url: r2Url, original_url: imageUrl, key };
+  const sceneImages = await Promise.all(imagePromises);
+  return { simulated: false, scene_images: sceneImages, count: sceneImages.length };
 }
 
-async function runAnimation(episodeId: string, episode: Record<string, unknown>) {
+async function runAnimation(episodeId: string, episode: Record<string, unknown>, db: unknown) {
   if (!isFalConfigured()) {
-    return {
-      simulated: true,
-      message: "FAL.ai belum dikonfigurasi — mode simulasi",
-    };
+    return { simulated: true, message: "FAL.ai belum dikonfigurasi — mode simulasi" };
   }
+
+  // Ambil scene images dari hasil image_generation job
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: imgJob } = await (db as any)
+    .from("production_jobs")
+    .select("result")
+    .eq("episode_id", episode.id)
+    .eq("job_type", "image_generation")
+    .eq("status", "completed")
+    .single();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const db_temp = episode as any;
-  const imageUrl: string | null = db_temp.thumbnail_url ?? null;
+  const sceneImages: string[] = (imgJob?.result as any)?.scene_images ?? [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const fallbackImage: string | null = (episode as any).thumbnail_url ?? null;
 
-  if (!imageUrl) {
-    return {
-      simulated: true,
-      message: "Belum ada gambar dari image_generation — mode simulasi",
-    };
+  const imagesToAnimate = sceneImages.length > 0 ? sceneImages : fallbackImage ? [fallbackImage] : [];
+
+  if (imagesToAnimate.length === 0) {
+    return { simulated: true, message: "Belum ada gambar — jalankan image_generation dulu" };
   }
 
-  const prompt = buildAnimationPromptFal(
-    episode.title as string,
-    (episode.theme as string) ?? null,
-  );
+  const scenes = parseScenes((episode.script as string) ?? "");
 
-  const videoUrl = await animateImageFal(imageUrl, prompt);
+  // Generate semua video clip secara paralel (Kling Standard via FAL.ai)
+  const clipPromises = imagesToAnimate.map(async (imgUrl, i) => {
+    const scene = scenes[i];
+    const prompt = scene
+      ? scene.animationPrompt
+      : buildAnimationPromptFal(episode.title as string, (episode.theme as string) ?? null);
+    const clipUrl = await animateImageFal(imgUrl, prompt);
+    if (!isR2Configured()) return clipUrl;
+    const key = buildAssetKey(episodeId, "animation", `scene${i}_${Date.now()}.mp4`);
+    await uploadFromUrl(key, clipUrl, "video/mp4");
+    return getPublicUrl(key);
+  });
 
-  if (!isR2Configured()) {
-    return { simulated: false, video_url: videoUrl, stored_in_r2: false };
-  }
-
-  const key = buildAssetKey(episodeId, "animation", `clip_${Date.now()}.mp4`);
-  await uploadFromUrl(key, videoUrl, "video/mp4");
-  const r2Url = getPublicUrl(key);
-
-  return { simulated: false, video_url: r2Url, original_url: videoUrl, key };
+  const sceneVideos = await Promise.all(clipPromises);
+  return { simulated: false, scene_videos: sceneVideos, count: sceneVideos.length, video_url: sceneVideos[0] };
 }
 
 function simulateJob(jobType: string) {
@@ -216,19 +221,22 @@ export async function POST(request: Request) {
           status: "animating",
           updated_at: new Date().toISOString(),
         };
-        if (!result.simulated && result.image_url) {
-          thumbnailUpdate.thumbnail_url = result.image_url;
+        // Simpan gambar pertama sebagai thumbnail
+        const sceneImgs = result.scene_images as string[] | undefined;
+        if (sceneImgs && sceneImgs.length > 0) {
+          thumbnailUpdate.thumbnail_url = sceneImgs[0];
         }
         await db.from("episodes").update(thumbnailUpdate).eq("id", episode.id);
         break;
       }
 
       case "animation": {
-        result = await runAnimation(episode.id, episode);
+        result = await runAnimation(episode.id, episode, db);
         const animUpdate: Record<string, unknown> = {
           status: "compositing",
           updated_at: new Date().toISOString(),
         };
+        // Simpan video pertama sebagai video_url utama
         if (!result.simulated && result.video_url) {
           animUpdate.video_url = result.video_url;
         }

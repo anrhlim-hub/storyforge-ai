@@ -14,37 +14,49 @@ interface ScriptInput {
 export async function generateScript(input: ScriptInput): Promise<string> {
   const wordCount = Math.round((input.target_duration / 60) * 120);
 
-  const prompt = `Kamu adalah penulis script animasi anak-anak Indonesia yang kreatif dan berpengalaman.
+  const prompt = `Kamu adalah penulis script animasi anak-anak Indonesia yang profesional.
 
 Buat script episode animasi berjudul "${input.title}" dengan detail berikut:
 ${input.theme ? `- Tema: ${input.theme}` : ""}
 ${input.moral_lesson ? `- Pesan Moral: ${input.moral_lesson}` : ""}
-- Durasi Target: ${input.target_duration} detik (sekitar ${wordCount} kata)
+- Durasi Target: ${input.target_duration} detik
 
 KARAKTER UTAMA:
 - BIMO: Panda jantan 7 tahun, ceria, pemberani, kadang ceroboh, suka petualangan
 - KIKO: Rubah betina 7 tahun, cerdas, kreatif, suka memecahkan masalah dengan cara unik
 
 FORMAT SCRIPT (gunakan format ini dengan TEPAT, tanpa tanda bintang, tanpa markdown):
-[NARASI] Deskripsi adegan / setting
+[NARASI] Deskripsi visual adegan yang detail (latar, suasana, aksi)
 [BIMO] Dialog Bimo
 [KIKO] Dialog Kiko
 
-PENTING: Jangan gunakan markdown seperti **teks** atau _teks_. Hanya gunakan format [TAG] polos.
+PENTING:
+- Jangan gunakan markdown seperti **teks** atau _teks_. Hanya gunakan format [TAG] polos.
+- Setiap [NARASI] harus deskripsi VISUAL yang kaya dan spesifik (untuk animasi)
+- WAJIB ada tepat 8 blok [NARASI] yang membagi episode menjadi 8 adegan visual
 
-PANDUAN:
-1. Gunakan bahasa Indonesia yang mudah dipahami anak usia 3-8 tahun
-2. Bagi dalam 3 bagian: Pembuka (perkenalan masalah), Petualangan (mencari solusi), Penutup (resolusi + pelajaran tersirat)
-3. Pesan moral disampaikan melalui tindakan dan dialog alami, BUKAN ceramah langsung
-4. Setiap dialog singkat (1-2 kalimat), energik, dan ekspresif
-5. Sertakan 2-3 adegan narasi untuk transisi visual
+STRUKTUR 8 ADEGAN:
+1. [NARASI] Pembuka — perkenalan setting dan karakter
+2. [NARASI] Pemicu — masalah atau tantangan muncul
+3. [NARASI] Reaksi — Bimo dan Kiko merespons
+4. [NARASI] Eksplorasi — mereka mencari solusi
+5. [NARASI] Rintangan — hambatan atau twist
+6. [NARASI] Penemuan — solusi ditemukan
+7. [NARASI] Aksi — menerapkan solusi
+8. [NARASI] Penutup — resolusi dan pelajaran
 
-Tulis script yang lengkap sekarang:`;
+PANDUAN PENULISAN:
+1. Bahasa Indonesia sederhana untuk anak usia 3-8 tahun
+2. Dialog singkat (1-2 kalimat), energik, ekspresif
+3. Pesan moral muncul dari tindakan, BUKAN ceramah
+4. Setiap adegan visual bisa dianimasikan 5 detik
+
+Tulis script yang lengkap dengan tepat 8 blok [NARASI] sekarang:`;
 
   const completion = await openai.chat.completions.create({
     model: "gpt-4o",
     messages: [{ role: "user", content: prompt }],
-    max_tokens: 1024,
+    max_tokens: 2048,
   });
 
   const content = completion.choices[0]?.message?.content;

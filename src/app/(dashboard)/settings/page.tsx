@@ -10,7 +10,7 @@ type Integrations = {
   facebook: { configured: boolean; pageId: string | null };
   openai: { configured: boolean };
   elevenlabs: { configured: boolean };
-  runway: { configured: boolean };
+  falai: { configured: boolean };
   leonardo: { configured: boolean };
   suno: { configured: boolean };
   cloudflareR2: { configured: boolean; bucketName: string | null };
@@ -41,13 +41,13 @@ const INTEGRATION_META = [
     group: "ai",
   },
   {
-    key: "runway",
-    name: "Runway ML",
-    description: "Generasi video animasi dari prompt dan gambar.",
+    key: "falai",
+    name: "FAL.ai (LTX Video)",
+    description: "Generasi video animasi image-to-video dengan LTX Video.",
     icon: Video,
     color: "text-blue-500",
     bg: "bg-blue-500/10",
-    envKey: "RUNWAY_API_KEY",
+    envKey: "FAL_API_KEY",
     group: "ai",
   },
   {

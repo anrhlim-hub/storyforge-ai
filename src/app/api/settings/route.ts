@@ -32,8 +32,8 @@ export async function GET() {
       elevenlabs: {
         configured: isConfigured(e.ELEVENLABS_API_KEY, "your_elevenlabs_api_key"),
       },
-      runway: {
-        configured: isConfigured(e.RUNWAY_API_KEY, "your_runway_api_key"),
+      falai: {
+        configured: isConfigured(e.FAL_API_KEY, "your_fal_api_key"),
       },
       leonardo: {
         configured: isConfigured(e.LEONARDO_API_KEY, "your_leonardo_api_key"),

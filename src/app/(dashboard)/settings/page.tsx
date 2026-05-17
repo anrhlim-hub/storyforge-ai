@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   CheckCircle2, XCircle, Globe, Brain, Mic, Video,
-  Image, Music2, Cloud, Database, RefreshCw, Info,
+  Image, Music2, Cloud, Database, RefreshCw, Info, Play, Loader2,
 } from "lucide-react";
 
 type Integrations = {
@@ -123,6 +123,113 @@ function StatusBadge({ ok }: { ok: boolean }) {
       <XCircle className="h-3 w-3" />
       Belum dikonfigurasi
     </span>
+  );
+}
+
+const VOICE_SAMPLES = {
+  bimo: "Hei Kiko! Ayo kita pergi ke hutan! Aku ingin menemukan sesuatu yang menarik hari ini!",
+  kiko: "Wah, ide bagus Bimo! Tapi kita harus hati-hati ya, karena hutan itu besar sekali.",
+  narrator: "Hari itu, Bimo dan Kiko memulai petualangan baru di hutan yang penuh dengan keajaiban.",
+};
+
+function VoiceTestPanel() {
+  const [character, setCharacter] = useState<"bimo" | "kiko" | "narrator">("bimo");
+  const [text, setText] = useState(VOICE_SAMPLES.bimo);
+  const [loading, setLoading] = useState(false);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
+
+  function handleCharacterChange(c: "bimo" | "kiko" | "narrator") {
+    setCharacter(c);
+    setText(VOICE_SAMPLES[c]);
+    setAudioUrl(null);
+  }
+
+  async function handleGenerate() {
+    setLoading(true);
+    setAudioUrl(null);
+    try {
+      const res = await fetch("/api/tts/preview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ character, text }),
+      });
+      if (!res.ok) {
+        const err = await res.json() as { error: string };
+        alert(err.error ?? "Gagal generate voice");
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      setAudioUrl(url);
+      setTimeout(() => audioRef.current?.play(), 100);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const charMeta = {
+    bimo:     { label: "Bimo", desc: "Panda laki-laki · lambat & lucu", color: "bg-green-500/10 text-green-700 border-green-200" },
+    kiko:     { label: "Kiko", desc: "Rubah perempuan · cerdas & ceria", color: "bg-orange-500/10 text-orange-700 border-orange-200" },
+    narrator: { label: "Narrator", desc: "Pencerita · netral & jelas", color: "bg-blue-500/10 text-blue-700 border-blue-200" },
+  };
+
+  return (
+    <div className="rounded-xl border bg-card p-5 space-y-4">
+      <div className="flex items-center gap-2">
+        <Mic className="h-4 w-4 text-muted-foreground" />
+        <h2 className="font-semibold">Test Voice Karakter</h2>
+        <span className="text-xs text-muted-foreground">Dengar suara sebelum produksi</span>
+      </div>
+
+      {/* Character selector */}
+      <div className="grid grid-cols-3 gap-2">
+        {(["bimo", "kiko", "narrator"] as const).map((c) => (
+          <button
+            key={c}
+            onClick={() => handleCharacterChange(c)}
+            className={`rounded-lg border px-3 py-2.5 text-left transition-all ${
+              character === c
+                ? charMeta[c].color + " border-current"
+                : "border-border hover:bg-muted"
+            }`}
+          >
+            <div className="text-sm font-medium">{charMeta[c].label}</div>
+            <div className="text-xs text-muted-foreground mt-0.5">{charMeta[c].desc}</div>
+          </button>
+        ))}
+      </div>
+
+      {/* Text input */}
+      <textarea
+        value={text}
+        onChange={(e) => { setText(e.target.value); setAudioUrl(null); }}
+        rows={3}
+        maxLength={500}
+        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+        placeholder="Ketik teks yang ingin diucapkan..."
+      />
+      <div className="flex items-center justify-between">
+        <span className="text-xs text-muted-foreground">{text.length}/500 karakter</span>
+        <button
+          onClick={handleGenerate}
+          disabled={loading || !text.trim()}
+          className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
+        >
+          {loading
+            ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Generating...</>
+            : <><Play className="h-3.5 w-3.5" /> Generate & Play</>
+          }
+        </button>
+      </div>
+
+      {/* Audio player */}
+      {audioUrl && (
+        <div className="rounded-lg border border-green-200 bg-green-500/5 px-3 py-2">
+          <audio ref={audioRef} controls src={audioUrl} className="w-full h-8" />
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -265,6 +372,9 @@ export default function SettingsPage() {
           Gagal memuat settings
         </div>
       )}
+
+      {/* Voice Test */}
+      {!loading && <VoiceTestPanel />}
 
       {/* Footer note */}
       {!loading && data && configured < total && (

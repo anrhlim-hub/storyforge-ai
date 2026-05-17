@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/db/server";
 import { generateVoiceBuffer, type VoiceCharacter } from "@/lib/ai/elevenlabs";
+import { isGoogleTtsConfigured, generateVoiceBufferGoogle, type TtsCharacter } from "@/lib/ai/google-tts";
 import { uploadBuffer, buildAssetKey, getPublicUrl, isR2Configured, uploadFromUrl } from "@/lib/storage/r2";
 import { generateScript } from "@/lib/ai/claude";
 import { isLeonardoConfigured, generateSceneImage } from "@/lib/ai/leonardo";
@@ -44,22 +45,31 @@ async function runVoiceOver(episodeId: string, script: string) {
   if (lines.length === 0) throw new Error("Script tidak memiliki dialog yang bisa diproses");
 
   if (!isR2Configured()) {
-    return {
-      simulated: true,
-      lines: lines.length,
-      warning: "R2 belum dikonfigurasi — mode simulasi",
-    };
+    return { simulated: true, lines: lines.length, warning: "R2 belum dikonfigurasi — mode simulasi" };
   }
+
+  // Gunakan Google TTS (suara Indonesia + pitch adjustment) jika tersedia, fallback ke ElevenLabs
+  const useGoogle = isGoogleTtsConfigured();
 
   const audioFiles: { character: string; url: string; key: string }[] = [];
   for (const line of lines) {
-    const buffer = await generateVoiceBuffer(line.text, line.character);
+    let buffer: Buffer;
+    if (useGoogle) {
+      buffer = await generateVoiceBufferGoogle(line.text, line.character as TtsCharacter);
+    } else {
+      buffer = await generateVoiceBuffer(line.text, line.character as VoiceCharacter);
+    }
     const key = buildAssetKey(episodeId, "voice", `${line.character}_${Date.now()}.mp3`);
     await uploadBuffer(key, buffer, "audio/mpeg");
     audioFiles.push({ character: line.character, url: getPublicUrl(key), key });
   }
 
-  return { simulated: false, lines: audioFiles.length, audio_files: audioFiles };
+  return {
+    simulated: false,
+    provider: useGoogle ? "google-tts" : "elevenlabs",
+    lines: audioFiles.length,
+    audio_files: audioFiles,
+  };
 }
 
 async function runImageGeneration(episodeId: string, episode: Record<string, unknown>) {

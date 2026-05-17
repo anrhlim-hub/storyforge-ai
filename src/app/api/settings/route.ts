@@ -41,10 +41,6 @@ export async function GET() {
       leonardo: {
         configured: isConfigured(e.LEONARDO_API_KEY, "your_leonardo_api_key"),
       },
-      suno: {
-        configured: isConfigured(e.SUNO_API_KEY, "your_suno_api_key"),
-        note: "Suno belum memiliki API publik resmi — fitur musik dalam simulasi",
-      },
       cloudflareR2: {
         configured: isConfigured(e.R2_ACCOUNT_ID, "your_r2_account_id"),
         bucketName: isConfigured(e.R2_ACCOUNT_ID, "your_r2_account_id") ? e.R2_BUCKET_NAME : null,

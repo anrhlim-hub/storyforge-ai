@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import {
   CheckCircle2, XCircle, Globe, Brain, Mic, Video,
-  Image, Music2, Cloud, Database, RefreshCw, Info, Play, Loader2,
+  Image, Cloud, Database, RefreshCw, Info, Play, Loader2,
 } from "lucide-react";
 
 type Integrations = {
@@ -13,7 +13,6 @@ type Integrations = {
   elevenlabs: { configured: boolean };
   falai: { configured: boolean };
   leonardo: { configured: boolean };
-  suno: { configured: boolean };
   cloudflareR2: { configured: boolean; bucketName: string | null };
   redis: { configured: boolean };
 };
@@ -69,16 +68,6 @@ const INTEGRATION_META = [
     color: "text-amber-500",
     bg: "bg-amber-500/10",
     envKey: "LEONARDO_API_KEY",
-    group: "ai",
-  },
-  {
-    key: "suno",
-    name: "Suno AI",
-    description: "Generasi musik latar dan theme song episode.",
-    icon: Music2,
-    color: "text-pink-500",
-    bg: "bg-pink-500/10",
-    envKey: "SUNO_API_KEY",
     group: "ai",
   },
   {
